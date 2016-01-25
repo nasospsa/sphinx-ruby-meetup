@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Autocomplete via Sphinx, using Rails and Select2</title>
+
+		<meta name="description" content="Autocomplete via Sphinx, using Rails and Select2">
+		<meta name="author" content="Nasos Psarrakos">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<link href="http://netdna.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet">
+		<style type="text/css" media="screen">
+		i.fa { font-family:FontAwesome; font-style: normal; }
+		.reveal p.small { font-size: 0.7em;}
+		.reveal p.very-large { font-size: 4em;}
+		.reveal pre code.small { font-size: 80%;}
+		</style>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section>
+					<h1>Autocomplete via Sphinx</h1>
+					<h2>using Rails &amp; Select2</h2>
+					<p>Nasos Psarrakos / <a href="mailto:psarrakos@gmail.com">psarrakos@gmail.com</a> / <i class="fa fa-github"></i> <a href="https://github.com/nasospsa">nasospsa</a></p>
+					<p></p>
+					<p class="very-large">
+						<i class="fa fa-search-plus"></i>
+					</p>
+				</section>
+				<section>
+					<h2>The problem:</h2>
+					<p>Searching for 'chick'en..</p>
+					<p class="fragment"><img src="http://www.cbc.ca/inthekitchen/assets_c/2012/06/grilled_chicken_for_efficient_summer_cooking-thumb-596x350-208123.jpg" alt=""></p>
+					<p class="fragment">Food table, 1000 chickens <span class="fragment">&rarr; no pretty results</span></p>
+				</section>
+				<section style="text-align:left;">
+					<h2>Example</h2>
+					<p>Search Term: "chick"</p>
+					<pre><code class="sql" data-trim>
+SELECT long_desc FROM foods
+WHERE long_desc LIKE '%CHICK%'
+LIMIT 7;
+					</code></pre>
+					<div class="fragment">
+						<h3>Results</h3>
+						<pre><code class="sql" data-trim>
+long_desc
+----------------------------------------------------------------------------------------
+ Chicken, gizzard, all classes, cooked, simmered
+ Chicken, broiler, rotisserie, BBQ, breast meat only
+ Chicken, broilers or fryers, meat and skin and giblets and neck, raw
+ Chicken, broilers or fryers, meat and skin and giblets and neck, cooked, fried, batter
+ Chicken, broilers or fryers, meat and skin and giblets and neck, cooked, fried, flour
+ Chicken, broilers or fryers, meat and skin and giblets and neck, roasted
+ Chicken, broilers or fryers, meat and skin and giblets and neck, stewed
+						</code></pre>
+					</div>
+				</section>
+				<section>
+					<h2>Possible Solution #1</h2>
+					<p>postgresql :: Full Text Search</p>
+					<p><img style="background:#fff;" src="https://www.computersnyou.com/wp-content/uploads/2014/12/postgresql-logo.png" alt=""></p>
+				</section>
+				<section>
+					<h2>Example with "chick"</h2>
+					<pre><code class="sql" data-trim>
+SELECT long_desc, ts_rank_cd(to_tsvector(long_desc), query) AS rank
+FROM foods, to_tsquery('chick') query
+WHERE to_tsvector(long_desc) @@ query
+ORDER BY rank DESC
+LIMIT 7;
+					</code></pre>
+					<div class="fragment">
+						<h3>Results</h3>
+						<pre><code class="sql">
+           long_desc            | rank
+--------------------------------+------
+ CHICK-FIL-A, Chick-n-Strips    |  0.2
+ SMART SOUP, Moroccan Chick Pea |  0.1
+ CHICK-FIL-A, hash browns       |  0.1
+						</code></pre>
+					</div>
+				</section>
+				<section>
+					<h2>Example with "chicken"</h2>
+					<pre><code class="sql" data-trim>
+SELECT long_desc, ts_rank_cd(to_tsvector(long_desc), query) AS rank
+FROM foods, to_tsquery('chicken') query
+WHERE to_tsvector(long_desc) @@ query
+ORDER BY rank DESC
+LIMIT 7;
+					</code></pre>
+					<div class="fragment">
+						<h3>Results</h3>
+						<pre><code class="sql small">
+                                       long_desc                                        | rank
+----------------------------------------------------------------------------------------+------
+ SUPPER BAKES MEAL KITS, Garlic Chicken with pasta (chicken not included)               |  0.2
+ SUPPER BAKES MEAL KITS, Lemon Chicken with herb rice (chicken not included)            |  0.2
+ CAMPBELL'S Red and White, GOLDFISH Pasta with Chicken in Chicken Broth, condensed      |  0.2
+ SUPPER BAKES MEAL KITS, Cheesy Chicken with pasta (chicken not included)               |  0.2
+ SUPPER BAKES MEAL KITS, Herb Chicken with rice (chicken not included)                  |  0.2
+ SUPPER BAKES MEAL KITS, Traditional Roast Chicken with stuffing (chicken not included) |  0.2
+ SUPPER BAKES MEAL KITS, Southwestern-Style Chicken w/rice (chicken not included)       |  0.2
+						</code></pre>
+					</div>
+				</section>
+				<section>
+					<h2>Possible Solution #2</h2>
+					<p>Sphinx via thinking-sphinx</p>
+					<p><img style="background: #fff;" src="http://sphinxsearch.com/images/logo.png" alt=""></p>
+				</section>
+				<section>
+					<h2>Thinking Sphinx Index Example</h2>
+					<pre><code class="ruby" data-trim>
+ThinkingSphinx::Index.define :food, :with => :real_time do
+  indexes long_desc, {
+    sortable: true,
+    enable_star: true,
+    min_infix_len: 3
+  }
+end
+					</code></pre>
+				</section>
+				<section>
+					<h2>Searching..</h2>
+					<pre><code class="ruby" data-trim>
+Food.search('chick*', limit: 10).map(&:long_desc)
+					</code></pre>
+					<div class="fragment">
+						<h3>Results</h3>
+						<pre><code class="ruby small">
+["CAMPBELL'S Red and White, GOLDFISH Pasta with Chicken in Chicken Broth, condensed",
+ "CHICK-FIL-A, Chick-n-Strips",
+ "SUPPER BAKES MEAL KITS, Cheesy Chicken with pasta (chicken not included)",
+ "SUPPER BAKES MEAL KITS, Garlic Chicken with pasta (chicken not included)",
+ "SUPPER BAKES MEAL KITS, Herb Chicken with rice (chicken not included)",
+ "SUPPER BAKES MEAL KITS, Lemon Chicken with herb rice (chicken not included)",
+ "SUPPER BAKES MEAL KITS, Southwestern-Style Chicken w/rice (chicken not included)",
+ "SUPPER BAKES MEAL KITS, Traditional Roast Chicken with stuffing (chicken not included)",
+ "Babyfood, meat, chicken, strained",
+ "Babyfood, meat, chicken, junior"]
+						</code></pre>
+					</div>	
+				</section>
+				<section>
+					<h2>Searching..#2</h2>
+					<pre><code class="ruby" data-trim>
+Food.search('chick*', {
+  match_mode: :extended,
+  ranker: :SPH04,
+  limit: 10
+}).map(&:long_desc)
+					</code></pre>
+					<div class="fragment">
+						<h3>Results</h3>
+						<pre><code class="ruby small">
+["CHICK-FIL-A, Chick-n-Strips",
+ "Chicken, broiler, rotisserie, BBQ, breast meat only",
+ "Chicken, broilers or fryers, meat and skin and giblets and neck, raw",
+ "Chicken, broilers or fryers, meat and skin and giblets and neck, cooked, fried, batter",
+ "Chicken, broilers or fryers, meat and skin and giblets and neck, cooked, fried, flour",
+ "Chicken, broilers or fryers, meat and skin and giblets and neck, roasted",
+ "Chicken, broilers or fryers, meat and skin and giblets and neck, stewed",
+ "Chicken, broilers or fryers, meat and skin, raw",
+ "Chicken, broilers or fryers, meat and skin, cooked, fried, batter",
+ "Chicken, broilers or fryers, meat and skin, cooked, fried, flour"]
+						</code></pre>
+					</div>
+				</section>
+				<section>
+				<video id="gif-mp4" poster="https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/200_s.gif" style="margin:0;padding:0" width="800" height="534" autoplay="" loop="">
+		            <source src="https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.mp4" type="video/mp4">
+		            Your browser does not support the mp4 video codec.
+		        </video>
+				</section>
+
+				<section>
+				<h2>Ranking</h2>
+				<blockquote cite="http://sphinxsearch.com/docs/current.html#builtin-rankers">
+					<p class="small">SPH_RANK_SPH04, added in version 1.10-beta, is generally based on the default SPH_RANK_PROXIMITY_BM25 ranker, but additionally boosts the matches when they occur in the <span class="fragment highlight-red">very beginning or the very end of a text field</span>. Thus, if a field equals the exact query, SPH04 should rank it higher than a field that contains the exact query but is not equal to it. (For instance, when the query is "Hyde Park", a document entitled "Hyde Park" should be ranked higher than a one entitled "Hyde Park, London" or "The Hyde Park Cafe".)</p>
+					<p class="small"><a href="http://sphinxsearch.com/docs/current.html#builtin-rankers">http://sphinxsearch.com/docs/current.html#builtin-rankers</a></p>
+				</blockquote>
+				</section>
+
+				<section>
+				<h2>New Class to hold custom attributes</h2>
+				<pre><code class="ruby" data-trim>
+class FoodSphinx < ActiveRecord::Base
+  after_save ThinkingSphinx::RealTime.callback_for(:food_sphinx)
+
+  has_many :meal_foods, foreign_key: 'foodID', primary_key: 'ndb_no'
+
+  def is_popular
+    ...
+  end
+end
+				</code></pre>
+				</section>
+
+				<section>
+				<h2>New Index as well</h2>
+				<pre><code class="ruby" data-trim>
+ThinkingSphinx::Index.define :food_sphinx, :with => :real_time do
+  indexes long_desc, sortable: true, enable_star: true, min_infix_len: 3
+
+  has ndb_no, type: :string
+
+  #If people have made meals with that food
+  has meal_foods.count, as: 'mf_count', type: :integer
+
+  has is_popular, as: 'popular', type: :boolean
+end
+				</code></pre>
+				</section>
+
+				<section>
+				<h2>The Search</h2>
+				<pre><code class="ruby" data-trim>
+term = 'chick'
+FoodSphinx.search(
+  "(^#{term}$) | (^#{term}*) | (#{term}*)  | (#{term})",
+  match_mode: :extended,
+  ranker: :SPH04,
+  select: '*, weight() as w',
+  order: 'mf_count desc, popular desc, w desc'
+)
+				</code></pre>
+				</section>
+
+				<section>
+				<h2>The JS part</h2>
+				<pre><code class="javascript" data-trim>
+this.$food.select2({
+  ...
+  sorter: function(data) {
+    var firsts = [],
+        rest = [];
+
+    _(data).each(function(r) {
+      (collection.get(r.id)) ? firsts.push(r) : rest.push(r);
+    });
+
+    return firsts.concat(rest);
+  },
+  ...
+});
+				</code></pre>
+				</section>
+
+				<section>
+				<h2>The near future</h2>
+				<pre><code class="ruby" data-trim>
+ThinkingSphinx::Index.define :food_sphinx, :with => :real_time do
+  indexes long_desc, sortable: true, enable_star: true, min_infix_len: 3
+
+  has ndb_no, type: :string
+
+  #If people have made meals with that food
+  has meal_foods.count, as: 'mf_count', type: :integer
+
+  has is_popular, as: 'popular', type: :boolean
+
+  ###
+  has is_used_by_me
+  has times_used_by_me
+  has is_created_by_me
+  has is_used_by_my_network
+  ###
+
+end
+				</code></pre>
+				</section>
+
+				<section>
+				<h1>Questions</h1>
+				<p class="very-large">
+					<i class="fa fa-question-circle"></i>
+				</p>
+				</section>
+
+				<section>
+				<h1>thank you</h1>
+				<p class="very-large">
+				<i class="fa fa-smile-o"></i>
+				</p>
+				</section>
+
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>

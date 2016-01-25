@@ -1,5 +1,3 @@
----
----
 <!doctype html>
 <html lang="en">
 
@@ -16,11 +14,11 @@
 
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
 
-		<link rel="stylesheet" href="{{ site.baseurl }}/css/reveal.css">
-		<link rel="stylesheet" href="{{ site.baseurl }}/css/theme/black.css" id="theme">
+		<link rel="stylesheet" href="/sphinx-ruby-meetup/css/reveal.css">
+		<link rel="stylesheet" href="/sphinx-ruby-meetup/css/theme/black.css" id="theme">
 
 		<!-- Code syntax highlighting -->
-		<link rel="stylesheet" href="{{ site.baseurl }}/lib/css/zenburn.css">
+		<link rel="stylesheet" href="/sphinx-ruby-meetup/lib/css/zenburn.css">
 
 		<!-- Printing and PDF exports -->
 		<script>
@@ -339,12 +337,12 @@ end
 
 				// Optional reveal.js plugins
 				dependencies: [
-					{ src: '{{ site.baseurl }}/lib/js/classList.js', condition: function() { return !document.body.classList; } },
-					{ src: '{{ site.baseurl }}/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
-					{ src: '{{ site.baseurl }}/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
-					{ src: '{{ site.baseurl }}/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
-					{ src: '{{ site.baseurl }}/plugin/zoom-js/zoom.js', async: true },
-					{ src: '{{ site.baseurl }}/plugin/notes/notes.js', async: true }
+					{ src: '/sphinx-ruby-meetup/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: '/sphinx-ruby-meetup/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '/sphinx-ruby-meetup/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '/sphinx-ruby-meetup/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: '/sphinx-ruby-meetup/plugin/zoom-js/zoom.js', async: true },
+					{ src: '/sphinx-ruby-meetup/plugin/notes/notes.js', async: true }
 				]
 			});
 
